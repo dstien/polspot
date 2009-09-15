@@ -1,10 +1,5 @@
-/*
- * $Id: session.h 326 2009-05-29 23:32:36Z dstien $
- *
- */
-
-#ifndef DESPOTIFY_SESSION_H
-#define DESPOTIFY_SESSION_H
+#ifndef POLSPOT_SESSION_H
+#define POLSPOT_SESSION_H
 
 #include "despotify.h"
 

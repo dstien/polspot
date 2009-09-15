@@ -1,10 +1,3 @@
-/*
- * $Id: event.c 325 2009-05-28 23:14:10Z dstien $
- *
- * Event subsystem for despotify
- *
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

@@ -1,10 +1,5 @@
-/*
- * $Id: event.h 325 2009-05-28 23:14:10Z dstien $
- *
- */
-
-#ifndef DESPOTIFY_EVENT_H
-#define DESPOTIFY_EVENT_H
+#ifndef POLSPOT_EVENT_H
+#define POLSPOT_EVENT_H
 
 #include <sys/select.h>
 

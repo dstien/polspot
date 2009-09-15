@@ -1,10 +1,5 @@
-/*
- * $Id: ui_tracklist.h 329 2009-05-31 20:01:31Z dstien $
- *
- */
-
-#ifndef DESPOTIFY_UI_TRACKLIST_H
-#define DESPOTIFY_UI_TRACKLIST_H
+#ifndef POLSPOT_UI_TRACKLIST_H
+#define POLSPOT_UI_TRACKLIST_H
 
 #include "ui.h"
 

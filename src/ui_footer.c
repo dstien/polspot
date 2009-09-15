@@ -1,8 +1,3 @@
-/*
- * $Id: ui_footer.c 388 2009-06-29 07:52:01Z dstien $
- *
- */
-
 #include <stdlib.h>
 #include <string.h>
 

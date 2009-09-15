@@ -1,8 +1,3 @@
-/*
- * $Id: ui_log.c 337 2009-06-03 07:31:02Z zagor $
- *
- */
-
 #include <stdlib.h>
 #include <time.h>
 

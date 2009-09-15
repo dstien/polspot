@@ -1,8 +1,3 @@
-/*
- * $Id: session.c 337 2009-06-03 07:31:02Z zagor $
- *
- */
-
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>

@@ -1,10 +1,5 @@
-/*
- * $Id: ui_sidebar.h 329 2009-05-31 20:01:31Z dstien $
- *
- */
-
-#ifndef DESPOTIFY_UI_SIDEBAR_H
-#define DESPOTIFY_UI_SIDEBAR_H
+#ifndef POLSPOT_UI_SIDEBAR_H
+#define POLSPOT_UI_SIDEBAR_H
 
 #include "ui.h"
 

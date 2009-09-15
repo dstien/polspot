@@ -1,10 +1,5 @@
-/*
- * $Id: ui_splash.h 329 2009-05-31 20:01:31Z dstien $
- *
- */
-
-#ifndef DESPOTIFY_UI_SPLASH_H
-#define DESPOTIFY_UI_SPLASH_H
+#ifndef POLSPOT_UI_SPLASH_H
+#define POLSPOT_UI_SPLASH_H
 
 #include "ui.h"
 

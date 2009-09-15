@@ -1,10 +1,5 @@
-/*
- * $Id: commands.h 326 2009-05-29 23:32:36Z dstien $
- *
- */
-
-#ifndef DESPOTIFY_COMMANDS_H
-#define DESPOTIFY_COMMANDS_H
+#ifndef POLSPOT_COMMANDS_H
+#define POLSPOT_COMMANDS_H
 
 void cmd_cb_connect();
 void cmd_cb_disconnect();

@@ -1,8 +1,3 @@
-/*
- * $Id: ui_splash.c 388 2009-06-29 07:52:01Z dstien $
- *
- */
-
 #include "ui_splash.h"
 
 #define LOGO_HEIGHT  8

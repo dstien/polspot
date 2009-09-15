@@ -1,8 +1,3 @@
-/*
- * $Id: ui_help.c 329 2009-05-31 20:01:31Z dstien $
- *
- */
-
 #include "ui_help.h"
 
 #define HELP_HEIGHT 18

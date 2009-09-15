@@ -1,8 +1,3 @@
-/*
- * $Id: main.c 326 2009-05-29 23:32:36Z dstien $
- *
- */
-
 #include <locale.h>
 #include <signal.h>
 #include <stdlib.h>

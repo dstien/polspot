@@ -1,17 +1,10 @@
-/*
- * $Id: ui.h 392 2009-07-26 18:59:54Z rzr $
- *
- */
-
-#ifndef DESPOTIFY_UI_H
-#define DESPOTIFY_UI_H
-
+#ifndef POLSPOT_UI_H
+#define POLSPOT_UI_H
 
 #define _XOPEN_SOURCE_EXTENDED // wchar_t in ncurses.
 #include <wchar.h>
 #include <ncurses.h>
 #include <stdbool.h>
-
 
 #define DSFY_MAX(a, b) ((a) > (b) ? (a) : (b))
 #define DSFY_MIN(a, b) ((a) < (b) ? (a) : (b))

@@ -1,0 +1,20 @@
+# Local build settings. Do NOT edit Makefile, edit this instead.
+# After a fresh checkout, you have to copy this to Makefile.local.mk.
+
+## Enable debug build
+# DEBUG = 1
+
+## Despotify location
+DSFYDIR = /path/to/despotify/src/lib
+
+## Install prefix
+# INSTALL_PREFIX = /usr
+
+## Specify ncurses include path explicitly. (should contain curses.h)
+# NCURSES_INCLUDE = /usr/local/include/ncursesw
+
+## Add more CFLAGS
+# CFLAGS += --omg-optimized
+
+## Adjust linking flags
+# LDFLAGS += -L/usr/local/lib

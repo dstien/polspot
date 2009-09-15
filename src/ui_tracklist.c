@@ -1,8 +1,3 @@
-/*
- * $Id: ui_tracklist.c 337 2009-06-03 07:31:02Z zagor $
- *
- */
-
 #include "event.h"
 #include "session.h"
 #include "ui_log.h"
