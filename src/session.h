@@ -1,0 +1,49 @@
+/*
+ * $Id: session.h 326 2009-05-29 23:32:36Z dstien $
+ *
+ */
+
+#ifndef DESPOTIFY_SESSION_H
+#define DESPOTIFY_SESSION_H
+
+#include "despotify.h"
+
+typedef enum sess_state {
+  SESS_OFFLINE,
+  SESS_ONLINE,
+  SESS_ERROR
+} sess_state_t;
+
+typedef struct sess_search {
+  struct search_result *res;
+  struct sess_search   *next;
+} sess_search_t;
+
+typedef struct session {
+  sess_state_t state;
+  struct despotify_session *dsfy;
+  char *username;
+  char *password;
+
+  bool playing;
+  bool paused;
+
+  sess_search_t *search;
+  unsigned int   search_len;
+} session_t;
+
+void sess_init();
+void sess_cleanup();
+
+void sess_connect();
+void sess_disconnect();
+
+void sess_username(const char *username);
+void sess_password(const char *password);
+
+void sess_search(const char *query);
+void sess_play(struct track *t);
+void sess_stop();
+void sess_pause();
+
+#endif
