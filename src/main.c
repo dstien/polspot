@@ -8,10 +8,19 @@
 
 int event_handler(EVENT *e, enum ev_flags ev_kind);
 
-void panic(const char *msg)
+void panic(const char *fmt, ...)
 {
   stdscr_cleanup();
-  fprintf(stderr, "%s\n", msg);
+
+  fprintf(stderr, "Fatal error: ");
+
+  va_list ap;
+  va_start(ap, fmt);
+  vfprintf(stderr, fmt, ap);
+  va_end(ap);
+
+  fprintf(stderr, "\n");
+
   abort();
 }
 
