@@ -40,6 +40,21 @@ void help_draw(ui_t *ui)
   ++line;
   mvwprintw(ui->win, ++line, x, "^L         r/redraw      Force screen redraw");
   mvwprintw(ui->win, ++line, x, "^Q         q/quit        Quit");
+
+#ifdef LIBSPOTIFY
+  // Try our best to comply with libspotify TOS 10.2.
+  line += 2;
+  x += 3;
+  mvwprintw(ui->win, ++line, x, "This product uses SPOTIFY® CORE but is not endorsed,");
+  --x;
+  mvwchgat(ui->win, line, x, 54, A_BOLD, UI_STYLE_DIM, NULL);
+  mvwprintw(ui->win, ++line, x, "certified or otherwise approved in any way by Spotify.");
+  mvwchgat(ui->win, line, x, 54, A_BOLD, UI_STYLE_DIM, NULL);
+  x -= 2;
+  mvwprintw(ui->win, ++line, x, "Spotify is the registered trade mark of the Spotify Group.");
+  mvwchgat(ui->win, line, x, 58, A_BOLD, UI_STYLE_DIM, NULL);
+#endif
+
 }
 
 int help_keypress(wint_t ch, bool code)

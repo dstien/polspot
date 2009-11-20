@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "event.h"
 #include "ui_log.h"
 
 #define MSG_MAX 128
@@ -73,5 +72,5 @@ void log_append(const char *fmt, ...)
   g_last_entry = entry;
 
   ui_dirty(UI_LOG);
-  event_msg_post(MSG_CLASS_APP, MSG_APP_UPDATE, NULL);
+  ui_update_post();
 }

@@ -72,6 +72,14 @@ void splash_draw(ui_t *ui)
 
   mvwprintw(ui->win, ++line, x, "Web: http://despotify.se/");
   mvwprintw(ui->win, ++line, x, "IRC: #despotify @ EFNet");
+
+#ifdef LIBSPOTIFY
+  // Try our best to comply with libspotify TOS 10.1.
+  line += 2;
+  x += 3;
+  mvwprintw(ui->win, ++line, x, "Uses SPOTIFY® CORE");
+  mvwchgat(ui->win, line, x, 18, A_BOLD, UI_STYLE_DIM, NULL);
+#endif
 }
 
 int splash_keypress(wint_t ch, bool code)

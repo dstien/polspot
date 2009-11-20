@@ -2,11 +2,12 @@
 #include <signal.h>
 #include <stdlib.h>
 
-#include "event.h"
+#include <event2/event.h>
+#include <event2/thread.h>
+
+#include "audio.h"
 #include "session.h"
 #include "ui.h"
-
-int event_handler(EVENT *e, enum ev_flags ev_kind);
 
 void panic(const char *fmt, ...)
 {
@@ -24,24 +25,15 @@ void panic(const char *fmt, ...)
   abort();
 }
 
-void sig_int(int signum)
+static void sigsegv_cb(evutil_socket_t fd, short event, void *arg)
 {
-  (void)signum;
-  event_msg_post(MSG_CLASS_APP, MSG_APP_QUIT, NULL);
-}
+  (void)fd;
+  (void)event;
+  (void)arg;
 
-void sig_segv(int signum)
-{
-  (void)signum;
   // Avoid infinite loop.
-  signal(signum, SIG_IGN);
+  signal(SIGINT, SIG_IGN);
   panic("Ouch, I segfaulted. How embarrassing. :-(\n");
-}
-
-void sig_winch(int signum)
-{
-  (void)signum;
-  event_msg_post(MSG_CLASS_APP, MSG_APP_REDRAW, NULL);
 }
 
 int main(int argc, char **argv)
@@ -51,69 +43,57 @@ int main(int argc, char **argv)
 
   setlocale(LC_ALL, "");
 
-  // Register event handler.
-  EVENT *e = event_register_action(NULL, 0, event_handler, NULL);
-  event_msg_subscription_class_set(e, MSG_CLASS_APP);
+  // Initialize libevent.
+  if (evthread_use_pthreads())
+    panic("libevent built without pthreads.");
 
-  // Read keyboard input.
-  event_register_fd(e, /*STDIN_FILENO*/ 0);
-  event_mark_idle(e);
+  struct event_config *evconf = event_config_new();
+  event_config_require_features(evconf, EV_FEATURE_FDS);
 
-  // Register signal handlers.
-  signal(SIGINT, sig_int);
-  signal(SIGTERM, sig_int);
-  signal(SIGSEGV, sig_segv);
-  signal(SIGWINCH, sig_winch);
+  struct event_base *evbase = event_base_new_with_config(evconf);
+  if (!evbase)
+    panic("No suitable libevent backend found.");
 
-  // Initialize libdespotify.
-  sess_init();
+  // Signal handlers.
+  struct event *sigint_ev   = evsignal_new(evbase, SIGINT,   ui_quit_cb,   evbase);
+  struct event *sigterm_ev  = evsignal_new(evbase, SIGTERM,  ui_quit_cb,   evbase);
+  struct event *sigsegv_ev  = evsignal_new(evbase, SIGSEGV,  sigsegv_cb,   NULL);
+  struct event *sigwinch_ev = evsignal_new(evbase, SIGWINCH, ui_redraw_cb, NULL);
+
+  evsignal_add(sigint_ev,   NULL);
+  evsignal_add(sigterm_ev,  NULL);
+  evsignal_add(sigsegv_ev,  NULL);
+  evsignal_add(sigwinch_ev, NULL);
+
+  // Initialize audio.
+  audio_init();
+
+  // Initialize Spotify session.
+  sess_init(evbase);
 
   // Initialize UI.
-  ui_init();
+  ui_init(evbase);
 
   // Main loop.
-  int ret = event_loop(-1);
+  // sess_cleanup() must be called inside the main loop in order to process
+  // events for graceful disconnecting.
+  int ret = event_base_dispatch(evbase);
 
   // Cleanup UI.
   ui_cleanup();
 
-  // Cleanup libdespotify.
-  sess_cleanup();
+  // Cleanup audio.
+  audio_cleanup();
+
+  // Cleanup signal handlers.
+  event_free(sigint_ev);
+  event_free(sigterm_ev);
+  event_free(sigsegv_ev);
+  event_free(sigwinch_ev);
+
+  // Cleanup libevent.
+  event_base_free(evbase);
+  event_config_free(evconf);
 
   return ret;
-}
-
-// Main event handler. Reads keyboard input and updates screen output.
-int event_handler(EVENT *e, enum ev_flags ev_kind)
-{
-  if (ev_kind == EV_MSG && e->msg->class == MSG_CLASS_APP) {
-    switch (e->msg->msg) {
-      case MSG_APP_QUIT:
-        // Remove keyboard listener.
-        event_unregister_fd(e);
-        event_mark_done(e);
-        break;
-
-      case MSG_APP_UPDATE:
-        // Apply UI changes.
-        ui_update(false);
-        break;
-
-      case MSG_APP_REDRAW:
-        // Force full UI redraw.
-        ui_balance();
-        break;
-    }
-  }
-  else if (ev_kind == EV_FD) {
-    wint_t ch;
-    int type = get_wch(&ch);
-    if (type == ERR)
-      panic("Keyboard input error");
-    else
-      ui_keypress(ch, type == KEY_CODE_YES);
-    event_mark_idle(e);
-  }
-
-  return 0;
 }

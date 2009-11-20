@@ -4,8 +4,12 @@
 ## Enable debug build
 # DEBUG = 1
 
-## Despotify location
-DSFYDIR = /path/to/despotify/src/lib
+## Use Spotify's official library instead of openspotify
+# LIBSPOTIFY = 1
+
+## Choose audio backend
+# AUDIO_BACKEND = libao
+# AUDIO_BACKEND = null
 
 ## Install prefix
 # INSTALL_PREFIX = /usr
@@ -13,8 +17,11 @@ DSFYDIR = /path/to/despotify/src/lib
 ## Specify ncurses include path explicitly. (should contain curses.h)
 # NCURSES_INCLUDE = /usr/local/include/ncursesw
 
-## Add more CFLAGS
-# CFLAGS += --omg-optimized
+## Additional CFLAGS
+# MYCFLAGS = --omg-optimized -I/home/user/src/openspotify/include
 
-## Adjust linking flags
-# LDFLAGS += -L/usr/local/lib
+## Additional linking flags
+# MYLDFLAGS = -L/home/user/src/openspotify/libopenspotify
+
+## Library paths for the run/debug make targets
+# LIBPATH = /home/user/src/openspotify/libopenspotify

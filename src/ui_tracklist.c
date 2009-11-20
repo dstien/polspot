@@ -1,4 +1,3 @@
-#include "event.h"
 #include "session.h"
 #include "ui_log.h"
 #include "ui_tracklist.h"
@@ -12,7 +11,7 @@ static int g_pos = 0;
 static int g_availy = 10;
 
 // Current search result.
-static struct search_result *g_res = 0;
+static struct sp_search *g_res = 0;
 
 void tracklist_init(ui_t *ui)
 {
@@ -38,36 +37,35 @@ void tracklist_draw(ui_t *ui)
       slen, slen, "Title", slen, slen, "Artist");
   mvwchgat(ui->win, 0, 0, -1, A_BOLD, UI_STYLE_DIM, NULL);
 
-  if (!g_res)
+  if (!g_res || !sp_search_is_loaded(g_res))
     return;
 
-  if (g_res->playlist->num_tracks) {
-    struct track *t = g_res->playlist->tracks;
-
+  if (sp_search_num_tracks(g_res)) {
     // Scroll offset.
-    int offset = DSFY_MIN(DSFY_MAX(g_pos - (g_availy / 2), 0),
-        g_res->playlist->num_tracks - g_availy);
+    i = DSFY_MAX(DSFY_MIN(DSFY_MAX(g_pos - (g_availy / 2), 0),
+        sp_search_num_tracks(g_res) - g_availy), 0);
 
-    // Find first track to be displayed in list.
-    if (offset) for (; t && i < offset; ++i, t = t->next);
-
-    for (; t && line < g_availy; t = t->next) {
+    sp_track *t = sp_search_track(g_res, i + line);
+    for (; t && line < g_availy; t = sp_search_track(g_res, i + line)) {
       // Concat list of artists.
       wchar_t art[slen];
       int len = 0;
-      for (struct artist* a = t->artist; a && len < slen; a = a->next)
-        len += swprintf(art + len, slen - len, L"%s%s", a->name, a->next ? "/" : "");
+
+      for (int ai = 0; ai < sp_track_num_artists(t) && len < slen; ++ai) {
+        sp_artist *a = sp_track_artist(t, 0);
+        len += swprintf(art + len, slen - len, L"%s%s", ai ? "/" : "", sp_artist_name(a));
+      }
 
       wchar_t str[ui->width];
       swprintf(str, sizeof(str), L"%3d %-*.*s %-*.*ls %2d:%02d",
-          i + line + 1, slen, slen, t->title, slen, slen, art,
-          t->length / 60000, t->length % 60000 / 1000);
+          i + line + 1, slen, slen, sp_track_name(t), slen, slen, art,
+          sp_track_duration(t) / 60000, sp_track_duration(t) % 60000 / 1000);
       mvwaddnwstr(ui->win, line + 1, 0, str, ui->width);
 
       if (i + line == g_pos)
         mvwchgat(ui->win, line + 1, 0, -1,
             (ui->flags & UI_FLAG_FOCUS ? A_REVERSE : A_BOLD),
-            (t->playable ? UI_STYLE_NORMAL : UI_STYLE_NA), NULL);
+            (sp_track_is_available(t) ? UI_STYLE_NORMAL : UI_STYLE_NA), NULL);
 
       ++line;
     }
@@ -75,9 +73,9 @@ void tracklist_draw(ui_t *ui)
 
   // Additional info at bottom.
   mvwprintw(ui->win, ui->height - 1, 0, "Query: <%s> Hits: %d/%d",
-      g_res->query,
-      g_res->playlist->num_tracks,
-      g_res->total_tracks);
+      sp_search_query(g_res),
+      sp_search_num_tracks(g_res),
+      sp_search_total_tracks(g_res));
   mvwchgat(ui->win, ui->height - 1, 0, -1, A_BOLD, UI_STYLE_DIM, NULL);
 }
 
@@ -92,22 +90,23 @@ int tracklist_keypress(wint_t ch, bool code)
   }
 
   // Nothing left to do if we've got an empty list.
-  if (!g_res || !g_res->playlist->num_tracks)
+  if (!g_res || !sp_search_is_loaded(g_res) || !sp_search_num_tracks(g_res))
     return ch;
 
-  struct track *t;
+  //struct track *t;
 
   switch (ch) {
     case KEY_ENTER:
     case '\n':
     case '\r':
       // Find track and play.
-      t = g_res->playlist->tracks;
+      sess_play(sp_search_track(g_res, g_pos));
+      /*t = g_res->playlist->tracks;
       for (int i = 0; t && i < g_pos; ++i, t = t->next);
       if (t)
         sess_play(t);
       else
-        log_append("Can't play track at pos %d", g_pos);
+        log_append("Can't play track at pos %d", g_pos);*/
       break;
 
     case KEY_UP:
@@ -117,7 +116,7 @@ int tracklist_keypress(wint_t ch, bool code)
 
     case KEY_DOWN:
     case 'j':
-      g_pos = DSFY_MIN(g_pos + 1, g_res->playlist->num_tracks - 1);
+      g_pos = DSFY_MIN(g_pos + 1, sp_search_num_tracks(g_res) - 1);
       break;
 
     case KEY_HOME:
@@ -125,7 +124,7 @@ int tracklist_keypress(wint_t ch, bool code)
       break;
 
     case KEY_END:
-      g_pos = g_res->playlist->num_tracks - 1;
+      g_pos = sp_search_num_tracks(g_res) - 1;
       break;
 
     case KEY_PPAGE:
@@ -133,7 +132,7 @@ int tracklist_keypress(wint_t ch, bool code)
       break;
 
     case KEY_NPAGE:
-      g_pos = DSFY_MIN(g_pos + g_availy, g_res->playlist->num_tracks - 1);
+      g_pos = DSFY_MIN(g_pos + g_availy, sp_search_num_tracks(g_res) - 1);
       break;
 
     default:
@@ -141,7 +140,7 @@ int tracklist_keypress(wint_t ch, bool code)
   }
 
   ui_dirty(UI_TRACKLIST);
-  event_msg_post(MSG_CLASS_APP, MSG_APP_UPDATE, NULL);
+  ui_update_post();
 
   return 0;
 }
@@ -163,5 +162,5 @@ void tracklist_set(int pos, bool focus)
   else
     ui_dirty(UI_TRACKLIST);
 
-  event_msg_post(MSG_CLASS_APP, MSG_APP_UPDATE, NULL);
+  ui_update_post();
 }

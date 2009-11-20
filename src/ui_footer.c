@@ -2,7 +2,6 @@
 #include <string.h>
 
 #include "commands.h"
-#include "event.h"
 #include "session.h"
 #include "ui_footer.h"
 
@@ -36,6 +35,9 @@ void footer_init(ui_t *ui)
 
 void footer_draw(ui_t *ui)
 {
+  static const char throbber[]   = "-\\|/";
+  static int        throbber_cur = 0;
+
   // Print status info by default.
   if (g_input.type == INPUT_NONE) {
     switch (g_session.state) {
@@ -44,7 +46,16 @@ void footer_draw(ui_t *ui)
         break;
 
       case SESS_ONLINE:
-        mvwprintw(ui->win, 0, 0, "ONLINE %s", g_session.dsfy->user_info->server_host);
+        mvwprintw(ui->win, 0, 0, "ONLINE");
+        break;
+
+      case SESS_CONNECTING:
+      case SESS_DISCONNECTING:
+        mvwaddch(ui->win, 0, 0, throbber[throbber_cur]);
+        if (++throbber_cur > 3) throbber_cur = 0;
+        mvwprintw(ui->win, 0, 2, (g_session.state == SESS_CONNECTING ? "Connecting..." : "Disconnecting"));
+        ui_dirty(UI_FOOTER);
+        ui_update_post(); // TODO: Delay update.
         break;
 
       case SESS_ERROR:
@@ -171,7 +182,7 @@ int footer_keypress(wint_t ch, bool code)
   }
 
   ui_dirty(UI_FOOTER);
-  event_msg_post(MSG_CLASS_APP, MSG_APP_UPDATE, NULL);
+  ui_update_post();
 
   return 0;
 }

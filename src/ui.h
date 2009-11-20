@@ -5,11 +5,13 @@
 #include <wchar.h>
 #include <ncurses.h>
 #include <stdbool.h>
+#include <event2/event.h>
 
 #define DSFY_MAX(a, b) ((a) > (b) ? (a) : (b))
 #define DSFY_MIN(a, b) ((a) < (b) ? (a) : (b))
 
 #define KEY_ESC 0x1b
+#define UI_COLORS 8
 
 enum {
   UI_STYLE_NORMAL = 0,
@@ -61,11 +63,22 @@ typedef struct ui {
   ui_keypress_cb_t keypress_cb;
 } ui_t;
 
+typedef struct screen {
+  bool      stdscr_initialized;
+  short     colors[UI_COLORS][3];
+  ui_t      ui_elements[UI_END];
+  ui_elem_t ui_focus;
+
+  struct event *stdin_ev;
+  struct event *update_ev;
+  struct event *redraw_ev;
+  struct event *quit_ev;
+} screen_t;
 
 void stdscr_init();
 void stdscr_cleanup();
 
-void ui_init();
+void ui_init(struct event_base *evbase);
 void ui_cleanup();
 
 void ui_balance();
@@ -75,6 +88,12 @@ void ui_dirty(ui_elem_t dirty);
 void ui_focus(ui_elem_t focus);
 ui_elem_t ui_focused();
 
-void ui_keypress(wint_t ch, bool code);
+void ui_input_cb(evutil_socket_t sock, short event, void *arg);
+void ui_update_post();
+void ui_update_cb(evutil_socket_t sock, short event, void *arg);
+void ui_redraw_post();
+void ui_redraw_cb(evutil_socket_t sock, short event, void *arg);
+void ui_quit_post();
+void ui_quit_cb(evutil_socket_t sock, short event, void *arg);
 
 #endif

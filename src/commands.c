@@ -1,7 +1,6 @@
 #include <string.h>
 
 #include "commands.h"
-#include "event.h"
 #include "session.h"
 #include "ui.h"
 #include "ui_footer.h"
@@ -50,12 +49,12 @@ void cmd_cb_main()
 
 void cmd_cb_redraw()
 {
-  event_msg_post(MSG_CLASS_APP, MSG_APP_REDRAW, NULL);
+  ui_redraw_post();
 }
 
 void cmd_cb_quit()
 {
-  event_msg_post(MSG_CLASS_APP, MSG_APP_QUIT, NULL);
+  ui_quit_post();
 }
 
 typedef void (*cmd_cb_t)();

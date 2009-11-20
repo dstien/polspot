@@ -1,7 +1,7 @@
 #include <sys/ioctl.h>
 
 #include "commands.h"
-#include "event.h"
+#include "main.h"
 #include "session.h"
 #include "ui.h"
 #include "ui_footer.h"
@@ -17,12 +17,7 @@
 #define UI_FOREACH_START(uis, var, start)          UI_FOREACH_START_END(uis, var, start, UI_END)
 #define UI_FOREACH(uis, var)                       UI_FOREACH_START_END(uis, var, 0,     UI_END)
 
-#define UI_COLORS 8
-
-static ui_t      g_ui_elements[UI_END];
-static int       g_stdscr_initialized = 0;
-static short     g_colors[UI_COLORS][3];
-static ui_elem_t g_ui_focus;
+screen_t g_screen;
 
 extern session_t g_session;
 
@@ -35,7 +30,7 @@ static void player_draw(ui_t *ui)
 // Ncurses initialization.
 void stdscr_init()
 {
-  if (g_stdscr_initialized)
+  if (g_screen.stdscr_initialized)
     return;
 
   initscr();
@@ -47,7 +42,7 @@ void stdscr_init()
     if (can_change_color()) {
       // Backup current definitions.
       for (int i = 0; i < UI_COLORS; ++i) {
-        color_content(i, &g_colors[i][0], &g_colors[i][1], &g_colors[i][2]);
+        color_content(i, &g_screen.colors[i][0], &g_screen.colors[i][1], &g_screen.colors[i][2]);
       }
 
       init_color(COLOR_BLACK, 256, 256, 256); // Dark gray
@@ -65,51 +60,59 @@ void stdscr_init()
   keypad(stdscr, TRUE);
   curs_set(0);
 
-  g_stdscr_initialized = 1;
+  g_screen.stdscr_initialized = true;
 }
 
 // Ncurses cleanup.
 void stdscr_cleanup()
 {
-  if (!g_stdscr_initialized)
+  if (!g_screen.stdscr_initialized)
     return;
 
   // Reset redefined colors.
   if (can_change_color()) {
     for (int i = 0; i < UI_COLORS; ++i) {
-      init_color(i, g_colors[i][0], g_colors[i][1], g_colors[i][2]);
+      init_color(i, g_screen.colors[i][0], g_screen.colors[i][1], g_screen.colors[i][2]);
     }
   }
 
   noraw();
   endwin();
 
-  g_stdscr_initialized = 0;
+  g_screen.stdscr_initialized = false;
 }
 
 // Initialize UI elements.
-void ui_init()
+void ui_init(struct event_base *evbase)
 {
+  g_screen.stdscr_initialized = false;
+  g_screen.stdin_ev = event_new(evbase, /*STDIN_FILENO*/ 0, EV_READ | EV_PERSIST, ui_input_cb, NULL);
+  event_add(g_screen.stdin_ev, NULL);
+
+  g_screen.update_ev = evtimer_new(evbase, ui_update_cb, NULL);
+  g_screen.redraw_ev = evtimer_new(evbase, ui_redraw_cb, NULL);
+  g_screen.quit_ev   = evtimer_new(evbase, ui_quit_cb,   NULL);
+
   stdscr_init();
 
-  splash_init(&g_ui_elements[UI_SPLASH]);
-  sidebar_init(&g_ui_elements[UI_SIDEBAR]);
-  tracklist_init(&g_ui_elements[UI_TRACKLIST]);
-  log_init(&g_ui_elements[UI_LOG]);
-  help_init(&g_ui_elements[UI_HELP]);
-  //player_init(&g_ui_elements[UI_PLAYER]);
-  footer_init(&g_ui_elements[UI_FOOTER]);
+  splash_init(&g_screen.ui_elements[UI_SPLASH]);
+  sidebar_init(&g_screen.ui_elements[UI_SIDEBAR]);
+  tracklist_init(&g_screen.ui_elements[UI_TRACKLIST]);
+  log_init(&g_screen.ui_elements[UI_LOG]);
+  help_init(&g_screen.ui_elements[UI_HELP]);
+  //player_init(&g_screen.ui_elements[UI_PLAYER]);
+  footer_init(&g_screen.ui_elements[UI_FOOTER]);
 
-  g_ui_elements[UI_PLAYER].win             = newwin(0, 0, 0, 0);
-  g_ui_elements[UI_PLAYER].flags           = 0;
-  g_ui_elements[UI_PLAYER].set             = UI_SET_NONE;
-  g_ui_elements[UI_PLAYER].fixed_width     = 0;
-  g_ui_elements[UI_PLAYER].fixed_height    = 3;
-  g_ui_elements[UI_PLAYER].draw_cb         = player_draw;
-  g_ui_elements[UI_PLAYER].keypress_cb     = 0;
+  g_screen.ui_elements[UI_PLAYER].win             = newwin(0, 0, 0, 0);
+  g_screen.ui_elements[UI_PLAYER].flags           = 0;
+  g_screen.ui_elements[UI_PLAYER].set             = UI_SET_NONE;
+  g_screen.ui_elements[UI_PLAYER].fixed_width     = 0;
+  g_screen.ui_elements[UI_PLAYER].fixed_height    = 3;
+  g_screen.ui_elements[UI_PLAYER].draw_cb         = player_draw;
+  g_screen.ui_elements[UI_PLAYER].keypress_cb     = 0;
 
   ui_show(UI_SET_BROWSER);
-  ui_balance();
+  ui_redraw_post();
 }
 
 // Cleanup UI elements.
@@ -117,10 +120,15 @@ void ui_cleanup()
 {
   stdscr_cleanup();
 
-  UI_FOREACH(g_ui_elements, ui) {
+  UI_FOREACH(g_screen.ui_elements, ui) {
     delwin(ui->win);
     ui->win = 0;
   }
+
+  event_free(g_screen.stdin_ev);
+  event_free(g_screen.update_ev);
+  event_free(g_screen.redraw_ev);
+  event_free(g_screen.quit_ev);
 }
 
 // Resize and stack UI elements on available screen space. Dynamic-height
@@ -134,7 +142,7 @@ void ui_balance()
   unsigned int scrwidth = ws.ws_col, scrheight = ws.ws_row;
 
   // Set size for fixed-height elements.
-  UI_FOREACH(g_ui_elements, ui) {
+  UI_FOREACH(g_screen.ui_elements, ui) {
     if (ui->fixed_height) {
       ui->width = scrwidth;
       ui->height = DSFY_MIN(ui->fixed_height, scrheight);
@@ -143,7 +151,7 @@ void ui_balance()
   }
 
   // Set remaining height to dynamic-height elements.
-  UI_FOREACH(g_ui_elements, ui)
+  UI_FOREACH(g_screen.ui_elements, ui)
     if (!ui->fixed_height)
       ui->height = scrheight;
 
@@ -153,7 +161,7 @@ void ui_balance()
     setwidth[set] = scrwidth;
 
   // Set width for fixed-width elements.
-  UI_FOREACH(g_ui_elements, ui) {
+  UI_FOREACH(g_screen.ui_elements, ui) {
     if (ui->set > UI_SET_NONE && ui->fixed_width) {
       ui->width = DSFY_MIN(ui->fixed_width, setwidth[ui->set]);
       setwidth[ui->set] -= ui->width;
@@ -161,7 +169,7 @@ void ui_balance()
   }
 
   // Set remaining width to dynamic-width elements.
-  UI_FOREACH(g_ui_elements, ui) {
+  UI_FOREACH(g_screen.ui_elements, ui) {
     if (ui->set > UI_SET_NONE && !ui->fixed_width)
       ui->width = setwidth[ui->set];
   }
@@ -172,7 +180,7 @@ void ui_balance()
   unsigned int scry = 0,
                dyny = 0,
                setx[UI_SET_END] = { };
-  UI_FOREACH(g_ui_elements, ui) {
+  UI_FOREACH(g_screen.ui_elements, ui) {
     // Resize and mark dirty.
     wresize(ui->win, ui->height, ui->width);
     ui->flags |= UI_FLAG_DIRTY;
@@ -207,7 +215,7 @@ void ui_update(bool redraw)
 
   wnoutrefresh(stdscr);
 
-  UI_FOREACH(g_ui_elements, ui) {
+  UI_FOREACH(g_screen.ui_elements, ui) {
     if (!(ui->flags & UI_FLAG_OFFSCREEN)
         && ((ui->flags & UI_FLAG_DIRTY) || redraw)
         && ui->height && ui->width) {
@@ -235,30 +243,29 @@ void ui_show(ui_set_t show)
   bool focused = false;
 
   for (ui_elem_t i = 0; i < UI_END; ++i) {
-    if (g_ui_elements[i].set == show) {
+    if (g_screen.ui_elements[i].set == show) {
       // Focus only first element in set.
       if (!focused) {
-        g_ui_elements[i].flags |= UI_FLAG_FOCUS;
-        g_ui_focus = i;
+        g_screen.ui_elements[i].flags |= UI_FLAG_FOCUS;
+        g_screen.ui_focus = i;
         focused = true;
       }
-      g_ui_elements[i].flags |= UI_FLAG_DIRTY;
-      g_ui_elements[i].flags &= ~UI_FLAG_OFFSCREEN;
-      
+      g_screen.ui_elements[i].flags |= UI_FLAG_DIRTY;
+      g_screen.ui_elements[i].flags &= ~UI_FLAG_OFFSCREEN;
     }
-    else if (g_ui_elements[i].set != UI_SET_NONE) {
-      g_ui_elements[i].flags &= ~(UI_FLAG_FOCUS | UI_FLAG_DIRTY);
-      g_ui_elements[i].flags |= UI_FLAG_OFFSCREEN;
+    else if (g_screen.ui_elements[i].set != UI_SET_NONE) {
+      g_screen.ui_elements[i].flags &= ~(UI_FLAG_FOCUS | UI_FLAG_DIRTY);
+      g_screen.ui_elements[i].flags |= UI_FLAG_OFFSCREEN;
     }
   }
 
-  event_msg_post(MSG_CLASS_APP, MSG_APP_UPDATE, NULL);
+  ui_update_post();
 }
 
 // Mark UI element as dirty. Will cause redraw of the element at next ui_update().
 void ui_dirty(ui_elem_t dirty)
 {
-  g_ui_elements[dirty].flags |= UI_FLAG_DIRTY;
+  g_screen.ui_elements[dirty].flags |= UI_FLAG_DIRTY;
 }
 
 // Move focus to given UI element. Focused element receives keypresses and
@@ -266,86 +273,148 @@ void ui_dirty(ui_elem_t dirty)
 void ui_focus(ui_elem_t focus)
 {
   // Don't focus offscreen UI elements or elements that can't handle keypresses.
-  if ((g_ui_elements[focus].flags & UI_FLAG_OFFSCREEN)
-      || !g_ui_elements[focus].keypress_cb)
+  if ((g_screen.ui_elements[focus].flags & UI_FLAG_OFFSCREEN)
+      || !g_screen.ui_elements[focus].keypress_cb)
     return;
 
   for (ui_elem_t i = 0; i < UI_END; ++i) {
     if (i == focus) {
-      g_ui_elements[i].flags |= (UI_FLAG_FOCUS | UI_FLAG_DIRTY);
-      g_ui_focus = focus;
+      g_screen.ui_elements[i].flags |= (UI_FLAG_FOCUS | UI_FLAG_DIRTY);
+      g_screen.ui_focus = focus;
     }
-    else if (g_ui_elements[i].flags & UI_FLAG_FOCUS) {
-      g_ui_elements[i].flags &= ~UI_FLAG_FOCUS;
-      g_ui_elements[i].flags |= UI_FLAG_DIRTY;
+    else if (g_screen.ui_elements[i].flags & UI_FLAG_FOCUS) {
+      g_screen.ui_elements[i].flags &= ~UI_FLAG_FOCUS;
+      g_screen.ui_elements[i].flags |= UI_FLAG_DIRTY;
     }
   }
 
-  event_msg_post(MSG_CLASS_APP, MSG_APP_UPDATE, NULL);
+  ui_update_post();
 }
 
 // Return currently focused UI element.
 ui_elem_t ui_focused()
 {
-  return g_ui_focus;
+  return g_screen.ui_focus;
 }
 
 // Handle keyboard bindings and redirect keypresses to focused UI element.
-void ui_keypress(wint_t ch, bool code)
+void ui_input_cb(evutil_socket_t sock, short event, void *arg)
 {
-  // Very special keys.
-  switch (ch) {
-    // Quit program.
-    case 'Q' - '@':
-      event_msg_post(MSG_CLASS_APP, MSG_APP_QUIT, NULL);
-      return;
+  (void)sock;
+  (void)event;
+  (void)arg;
 
-    // Force screen redraw.
-    case 'L' - '@':
-      event_msg_post(MSG_CLASS_APP, MSG_APP_REDRAW, NULL);
-      return;
+  wint_t ch;
+  int type;
+
+  while ((type = get_wch(&ch)) != ERR) {
+    // Very special keys.
+    switch (ch) {
+      // Quit program.
+      case 'Q' - '@':
+        ui_quit_post();
+        continue;
+
+      // Force screen redraw.
+      case 'L' - '@':
+        ui_redraw_post();
+        continue;
+    }
+
+    // Forward regular keys to focused element.
+    ch = g_screen.ui_elements[g_screen.ui_focus].keypress_cb(ch, type == KEY_CODE_YES);
+
+    if (!ch)
+      continue;
+
+    // Check remaining keys. Text input will override most of these.
+    switch (ch) {
+      case '?':
+      case 'h':
+      case KEY_F(1):
+        ui_show(UI_SET_HELP);
+        continue;
+
+      case ':':
+        footer_input(INPUT_COMMAND);
+        continue;
+
+      case '/':
+        footer_input(INPUT_SEARCH);
+        continue;
+
+      case 'H' - '@':
+      case 127:
+      case KEY_BACKSPACE:
+        cmd_cb_stop();
+        continue;
+
+      case ' ':
+        cmd_cb_pause();
+        continue;
+
+      case '|':
+        ui_show(UI_SET_LOG);
+        continue;
+
+      case 'E' - '@':
+        cmd_cb_connect();
+        continue;
+
+      case 'W' - '@':
+        cmd_cb_disconnect();
+        continue;
+    }
   }
+}
 
-  // Forward regular keys to focused element.
-  ch = g_ui_elements[g_ui_focus].keypress_cb(ch, code);
+// Queue update event to apply on-screen changes.
+void ui_update_post()
+{
+  struct timeval tv = { 0, 0 };
+  evtimer_add(g_screen.update_ev, &tv);
+}
 
-  if (!ch)
-    return;
+// Callback from event handler.
+void ui_update_cb(evutil_socket_t sock, short event, void *arg)
+{
+  (void)sock;
+  (void)event;
+  (void)arg;
 
-  // Check remaining keys. Text input will override most of these.
-  switch (ch) {
-    case '?':
-    case 'h':
-    case KEY_F(1):
-      ui_show(UI_SET_HELP);
-      return;
+  ui_update(false);
+}
 
-    case ':':
-      footer_input(INPUT_COMMAND);
-      return;
+// Queue redraw event to force full screen redraw.
+void ui_redraw_post()
+{
+  struct timeval tv = { 0, 0 };
+  evtimer_add(g_screen.redraw_ev, &tv);
+}
 
-    case '/':
-      footer_input(INPUT_SEARCH);
-      return;
+// Callback from event handler.
+void ui_redraw_cb(evutil_socket_t sock, short event, void *arg)
+{
+  (void)sock;
+  (void)event;
+  (void)arg;
 
-    case KEY_BACKSPACE:
-      cmd_cb_stop();
-      return;
+  ui_balance();
+}
 
-    case ' ':
-      cmd_cb_pause();
-      break;
+// Queue application quit event.
+void ui_quit_post()
+{
+  struct timeval tv = { 0, 0 };
+  evtimer_add(g_screen.quit_ev, &tv);
+}
 
-    case '|':
-      ui_show(UI_SET_LOG);
-      return;
+// Callback from event handler.
+void ui_quit_cb(evutil_socket_t sock, short event, void *arg)
+{
+  (void)sock;
+  (void)event;
+  (void)arg;
 
-    case 'E' - '@':
-      cmd_cb_connect();
-      return;
-
-    case 'W' - '@':
-      cmd_cb_disconnect();
-      return;
-  }
+  sess_cleanup();
 }

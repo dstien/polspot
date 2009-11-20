@@ -29,7 +29,7 @@ void sidebar_draw(ui_t *ui)
 
   // TODO: Scrolling.
   for (sess_search_t *s = g_session.search; s && line < ui->height; s = s->next) {
-    mvwprintw(ui->win, line, 0, "%.24s", s->res->query);
+    mvwprintw(ui->win, line, 0, "%.24s", sp_search_query(s->res));
 
     if (line - 1 == g_pos)
       mvwchgat(ui->win, line, 0, -1, (ui->flags & UI_FLAG_FOCUS ? A_REVERSE : A_BOLD), UI_STYLE_NORMAL, NULL);
@@ -80,7 +80,7 @@ int sidebar_keypress(wint_t ch, bool code)
   }
 
   ui_dirty(UI_SIDEBAR);
-  event_msg_post(MSG_CLASS_APP, MSG_APP_UPDATE, NULL);
+  ui_update_post();
 
   return 0;
 }

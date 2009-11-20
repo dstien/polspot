@@ -1,17 +1,6 @@
 export
 
-CFLAGS = -Wall -Wextra -ggdb -std=gnu99 -I$(DSFYDIR)
-LDFLAGS = -L$(DSFYDIR)/.libs -ldespotify
-
-LD = $(CC)
-
-INSTALL_PREFIX ?= ${DESTDIR}/usr
-
 include Makefile.local.mk
-
-ifeq ($(DEBUG), 1)
-    CFLAGS += -DDEBUG
-endif
 
 SUBDIRS = src
 
@@ -42,4 +31,7 @@ Makefile.local.mk:
 	cp Makefile.local.mk.dist Makefile.local.mk
 
 run:
-	LD_LIBRARY_PATH=$(DSFYDIR)/.libs src/polspot
+	LD_LIBRARY_PATH=$(LIBPATH) src/polspot
+
+debug:
+	LD_LIBRARY_PATH=$(LIBPATH) gdb src/polspot
