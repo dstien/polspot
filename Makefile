@@ -31,7 +31,7 @@ Makefile.local.mk:
 	cp Makefile.local.mk.dist Makefile.local.mk
 
 run:
-	LD_LIBRARY_PATH=$(LIBPATH) src/polspot
+	LD_LIBRARY_PATH=$(LIBPATH) src/polspot 2> /dev/null
 
 debug:
 	LD_LIBRARY_PATH=$(LIBPATH) gdb src/polspot

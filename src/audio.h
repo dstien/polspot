@@ -12,6 +12,7 @@ typedef struct audio {
   struct audio_pcm *head;
   struct audio_pcm *tail;
   int              buffered_frames;
+  int              position;
 
   void             *backend_ctx;
 } audio_t;
@@ -24,5 +25,7 @@ void audio_init();
 void audio_cleanup();
 
 int audio_cb_music_delivery(sp_session *sess, const sp_audioformat *format, const void *frames, int num_frames);
+int audio_position();
+void audio_clear_position();
 
 #endif

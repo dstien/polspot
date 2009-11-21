@@ -133,7 +133,7 @@ int tracklist_keypress(wint_t ch, bool code)
   }
 
   ui_dirty(UI_TRACKLIST);
-  ui_update_post();
+  ui_update_post(0);
 
   return 0;
 }
@@ -155,5 +155,5 @@ void tracklist_set(int pos, bool focus)
   else
     ui_dirty(UI_TRACKLIST);
 
-  ui_update_post();
+  ui_update_post(0);
 }

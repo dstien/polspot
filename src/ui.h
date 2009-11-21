@@ -32,6 +32,7 @@ typedef enum ui_elem {
   UI_LOG,
   UI_HELP,
   UI_TRACKINFO,
+  UI_TRACKPROGRESS,
   UI_FOOTER,
   UI_END
 } ui_elem_t;
@@ -89,7 +90,7 @@ void ui_focus(ui_elem_t focus);
 ui_elem_t ui_focused();
 
 void ui_input_cb(evutil_socket_t sock, short event, void *arg);
-void ui_update_post();
+void ui_update_post(int delay);
 void ui_update_cb(evutil_socket_t sock, short event, void *arg);
 void ui_redraw_post();
 void ui_redraw_cb(evutil_socket_t sock, short event, void *arg);

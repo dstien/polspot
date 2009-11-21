@@ -39,7 +39,7 @@ static void sess_cb_logged_out(sp_session *sess)
   g_session.state = SESS_OFFLINE;
   log_append("Logged out");
   ui_dirty(UI_FOOTER);
-  ui_update_post();
+  ui_update_post(0);
 
   if (g_session.exiting)
     sess_cleanup();
@@ -85,6 +85,7 @@ static void sess_cb_play_token_lost(sp_session *sess)
 static void sess_cb_end_of_track(sp_session *sess)
 {
   (void)sess;
+
   struct timeval tv = { 0, 250000 }; // 0.25 sec buffer.
   evtimer_add(g_session.stop_ev, &tv);
 }
@@ -96,7 +97,7 @@ static void sess_cb_search_complete_cb(sp_search *res, void *data)
   log_append("Search result: %d/%d", sp_search_num_tracks(res), sp_search_total_tracks(res));
   ui_dirty(UI_SIDEBAR);
   ui_dirty(UI_TRACKLIST);
-  ui_update_post();
+  ui_update_post(0);
 }
 
 static sp_session_callbacks g_callbacks = {
@@ -205,7 +206,7 @@ void sess_connect()
   // Redraw status info.
   g_session.state = SESS_CONNECTING;
   ui_dirty(UI_FOOTER);
-  ui_update_post();
+  ui_update_post(0);
 }
 
 void sess_disconnect()
@@ -227,7 +228,7 @@ void sess_disconnect()
 
   // Redraw status info.
   ui_dirty(UI_FOOTER);
-  ui_update_post();
+  ui_update_post(0);
 }
 
 void sess_username(const char *username)
@@ -303,9 +304,10 @@ void sess_play(sp_track *t)
 
   g_session.playing = true;
 
-  // Redraw track info.
+  // Redraw track info and progress.
   ui_dirty(UI_TRACKINFO);
-  ui_update_post();
+  ui_dirty(UI_TRACKPROGRESS);
+  ui_update_post(0);
 }
 
 // Stop playback.
@@ -320,11 +322,13 @@ void sess_stop()
   g_session.playing = false;
   g_session.paused = false;
 
+  audio_clear_position();
+
   log_append("Stopped");
 
   // Redraw track info.
   ui_dirty(UI_TRACKINFO);
-  ui_update_post();
+  ui_update_post(0);
 }
 
 static void sess_stop_cb(evutil_socket_t sock, short event, void *arg)
@@ -348,8 +352,12 @@ void sess_pause()
     panic("sp_session_player_play() failed: %s", sp_error_message(err));
 
 
-  if (g_session.paused)
+  if (g_session.paused) {
     log_append("Paused");
-  else
+  }
+  else {
+    // Continue updating track progress.
+    ui_dirty(UI_TRACKPROGRESS);
     log_append("Resuming");
+  }
 }

@@ -55,7 +55,7 @@ void footer_draw(ui_t *ui)
         if (++throbber_cur > 3) throbber_cur = 0;
         mvwprintw(ui->win, 0, 2, (g_session.state == SESS_CONNECTING ? "Connecting..." : "Disconnecting"));
         ui_dirty(UI_FOOTER);
-        ui_update_post(); // TODO: Delay update.
+        ui_update_post(100);
         break;
 
       case SESS_ERROR:
@@ -182,7 +182,7 @@ int footer_keypress(wint_t ch, bool code)
   }
 
   ui_dirty(UI_FOOTER);
-  ui_update_post();
+  ui_update_post(0);
 
   return 0;
 }

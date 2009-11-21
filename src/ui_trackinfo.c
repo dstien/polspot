@@ -9,7 +9,7 @@ void trackinfo_init(ui_t *ui)
   ui->flags        = 0;
   ui->set          = UI_SET_NONE;
   ui->fixed_width  = 0;
-  ui->fixed_height = 3;
+  ui->fixed_height = 2;
   ui->draw_cb      = trackinfo_draw;
   ui->keypress_cb  = 0;
 }

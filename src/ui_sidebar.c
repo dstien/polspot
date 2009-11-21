@@ -80,7 +80,7 @@ int sidebar_keypress(wint_t ch, bool code)
   }
 
   ui_dirty(UI_SIDEBAR);
-  ui_update_post();
+  ui_update_post(0);
 
   return 0;
 }

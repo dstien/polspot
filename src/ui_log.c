@@ -72,5 +72,5 @@ void log_append(const char *fmt, ...)
   g_last_entry = entry;
 
   ui_dirty(UI_LOG);
-  ui_update_post();
+  ui_update_post(0);
 }

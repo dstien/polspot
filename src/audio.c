@@ -24,6 +24,7 @@ void audio_init()
 {
   g_audio.head = g_audio.tail = NULL;
   g_audio.buffered_frames = 0;
+  g_audio.position = 0;
 
   g_audio.backend_ctx = audio_backend_init();
 
@@ -94,6 +95,22 @@ int audio_cb_music_delivery(sp_session *sess, const sp_audioformat *format, cons
   return num_frames;
 }
 
+int audio_position()
+{
+  pthread_mutex_lock(&g_audio.mutex);
+  int pos = g_audio.position;
+  pthread_mutex_unlock(&g_audio.mutex);
+
+  return pos;
+}
+
+void audio_clear_position()
+{
+  pthread_mutex_lock(&g_audio.mutex);
+  g_audio.position = 0;
+  pthread_mutex_unlock(&g_audio.mutex);
+}
+
 static void audio_flush()
 {
   while (g_audio.head) {
@@ -126,6 +143,7 @@ static void* audio_loop(void *arg)
       g_audio.head = g_audio.tail = NULL;
 
     g_audio.buffered_frames -= pcm->num_frames;
+    g_audio.position += pcm->num_frames * 1000 / pcm->sample_rate;
 
     pthread_mutex_unlock(&g_audio.mutex);
 

@@ -11,6 +11,7 @@
 #include "ui_splash.h"
 #include "ui_trackinfo.h"
 #include "ui_tracklist.h"
+#include "ui_trackprogress.h"
 
 #define UI_FOREACH_START_END(uis, var, start, end) for (ui_t *var = &uis[start], *_i = (ui_t*)start; \
                                                    (long)_i != end; _i = (ui_t*)((long)_i + 1), \
@@ -96,6 +97,7 @@ void ui_init(struct event_base *evbase)
   log_init(&g_screen.ui_elements[UI_LOG]);
   help_init(&g_screen.ui_elements[UI_HELP]);
   trackinfo_init(&g_screen.ui_elements[UI_TRACKINFO]);
+  trackprogress_init(&g_screen.ui_elements[UI_TRACKPROGRESS]);
   footer_init(&g_screen.ui_elements[UI_FOOTER]);
 
   ui_show(UI_SET_BROWSER);
@@ -246,7 +248,7 @@ void ui_show(ui_set_t show)
     }
   }
 
-  ui_update_post();
+  ui_update_post(0);
 }
 
 // Mark UI element as dirty. Will cause redraw of the element at next ui_update().
@@ -275,7 +277,7 @@ void ui_focus(ui_elem_t focus)
     }
   }
 
-  ui_update_post();
+  ui_update_post(0);
 }
 
 // Return currently focused UI element.
@@ -356,9 +358,10 @@ void ui_input_cb(evutil_socket_t sock, short event, void *arg)
 }
 
 // Queue update event to apply on-screen changes.
-void ui_update_post()
+// Delay in milliseconds.
+void ui_update_post(int delay)
 {
-  struct timeval tv = { 0, 0 };
+  struct timeval tv = { 0, delay * 1000 };
   evtimer_add(g_screen.update_ev, &tv);
 }
 
