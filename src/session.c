@@ -304,16 +304,11 @@ void sess_stop()
   if (g_session.state != SESS_ONLINE || !g_session.current_track || !sp_track_is_loaded(g_session.current_track))
     return;
 
-  sp_error err = sp_session_player_play(g_session.spotify, false);
-  if (err != SP_ERROR_OK)
-    panic("sp_session_player_play() failed: %s", sp_error_message(err));
-
   sp_session_player_unload(g_session.spotify);
 
   g_session.current_track = NULL;
   g_session.playing = false;
   g_session.paused = false;
-
 
   log_append("Stopped");
 }
