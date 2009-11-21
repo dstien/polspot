@@ -14,6 +14,8 @@
 
 session_t g_session;
 
+static void sess_stop_cb(evutil_socket_t sock, short event, void *arg);
+
 static void sess_cb_logged_in(sp_session *sess, sp_error err)
 {
   if (err == SP_ERROR_OK) {
@@ -78,10 +80,13 @@ static void sess_cb_play_token_lost(sp_session *sess)
   log_append("Play token lost. Playback initiated from another session.");
 }
 
+// This callback is called from within a libspotify thread. Post an event
+// to be processed in the main program thread.
 static void sess_cb_end_of_track(sp_session *sess)
 {
   (void)sess;
-  log_append("Got end-of-track callback");
+  struct timeval tv = { 0, 250000 }; // 0.25 sec buffer.
+  evtimer_add(g_session.stop_ev, &tv);
 }
 
 static void sess_cb_search_complete_cb(sp_search *res, void *data)
@@ -130,6 +135,7 @@ void sess_init(struct event_base *evbase)
 {
   g_session.evbase  = evbase;
   g_session.spot_ev = evtimer_new(evbase, sess_event_cb, &g_session);
+  g_session.stop_ev = evtimer_new(evbase, sess_stop_cb, &g_session);
   g_session.exiting = false;
   g_session.current_track = NULL;
 
@@ -311,6 +317,15 @@ void sess_stop()
   g_session.paused = false;
 
   log_append("Stopped");
+}
+
+static void sess_stop_cb(evutil_socket_t sock, short event, void *arg)
+{
+  (void)sock;
+  (void)event;
+  (void)arg;
+
+  sess_stop();
 }
 
 // Toggle playback pause.

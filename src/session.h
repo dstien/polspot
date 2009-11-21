@@ -20,6 +20,7 @@ typedef struct sess_search {
 typedef struct session {
   sp_session *spotify;
   struct event *spot_ev;
+  struct event *stop_ev;
   struct event_base *evbase;
   sess_state_t state;
   char *username;
