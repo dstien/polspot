@@ -99,14 +99,7 @@ int tracklist_keypress(wint_t ch, bool code)
     case KEY_ENTER:
     case '\n':
     case '\r':
-      // Find track and play.
       sess_play(sp_search_track(g_res, g_pos));
-      /*t = g_res->playlist->tracks;
-      for (int i = 0; t && i < g_pos; ++i, t = t->next);
-      if (t)
-        sess_play(t);
-      else
-        log_append("Can't play track at pos %d", g_pos);*/
       break;
 
     case KEY_UP:

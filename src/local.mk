@@ -35,7 +35,7 @@ else
 	LDFLAGS += -lopenspotify
 endif
 
-POLSPOT_OBJS += audio.o commands.o main.o session.o ui.o ui_footer.o ui_help.o ui_log.o ui_sidebar.o ui_splash.o ui_tracklist.o
+POLSPOT_OBJS += audio.o commands.o main.o session.o ui.o ui_footer.o ui_help.o ui_log.o ui_sidebar.o ui_splash.o ui_trackinfo.o ui_tracklist.o
 KEY_H = ../key.h
 UA_H = user_agent.h
 

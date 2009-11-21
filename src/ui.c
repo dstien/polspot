@@ -9,6 +9,7 @@
 #include "ui_log.h"
 #include "ui_sidebar.h"
 #include "ui_splash.h"
+#include "ui_trackinfo.h"
 #include "ui_tracklist.h"
 
 #define UI_FOREACH_START_END(uis, var, start, end) for (ui_t *var = &uis[start], *_i = (ui_t*)start; \
@@ -20,12 +21,6 @@
 screen_t g_screen;
 
 extern session_t g_session;
-
-// Draw playback status placeholder.
-static void player_draw(ui_t *ui)
-{
-  wbkgd(ui->win, '.');
-}
 
 // Ncurses initialization.
 void stdscr_init()
@@ -100,16 +95,8 @@ void ui_init(struct event_base *evbase)
   tracklist_init(&g_screen.ui_elements[UI_TRACKLIST]);
   log_init(&g_screen.ui_elements[UI_LOG]);
   help_init(&g_screen.ui_elements[UI_HELP]);
-  //player_init(&g_screen.ui_elements[UI_PLAYER]);
+  trackinfo_init(&g_screen.ui_elements[UI_TRACKINFO]);
   footer_init(&g_screen.ui_elements[UI_FOOTER]);
-
-  g_screen.ui_elements[UI_PLAYER].win             = newwin(0, 0, 0, 0);
-  g_screen.ui_elements[UI_PLAYER].flags           = 0;
-  g_screen.ui_elements[UI_PLAYER].set             = UI_SET_NONE;
-  g_screen.ui_elements[UI_PLAYER].fixed_width     = 0;
-  g_screen.ui_elements[UI_PLAYER].fixed_height    = 3;
-  g_screen.ui_elements[UI_PLAYER].draw_cb         = player_draw;
-  g_screen.ui_elements[UI_PLAYER].keypress_cb     = 0;
 
   ui_show(UI_SET_BROWSER);
   ui_redraw_post();

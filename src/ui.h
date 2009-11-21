@@ -31,7 +31,7 @@ typedef enum ui_elem {
   UI_TRACKLIST,
   UI_LOG,
   UI_HELP,
-  UI_PLAYER,
+  UI_TRACKINFO,
   UI_FOOTER,
   UI_END
 } ui_elem_t;

@@ -302,6 +302,10 @@ void sess_play(sp_track *t)
     panic("sp_session_player_play() failed: %s", sp_error_message(err));
 
   g_session.playing = true;
+
+  // Redraw track info.
+  ui_dirty(UI_TRACKINFO);
+  ui_update_post();
 }
 
 // Stop playback.
@@ -317,6 +321,10 @@ void sess_stop()
   g_session.paused = false;
 
   log_append("Stopped");
+
+  // Redraw track info.
+  ui_dirty(UI_TRACKINFO);
+  ui_update_post();
 }
 
 static void sess_stop_cb(evutil_socket_t sock, short event, void *arg)
