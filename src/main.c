@@ -58,7 +58,7 @@ int main(int argc, char **argv)
   struct event *sigint_ev   = evsignal_new(evbase, SIGINT,   ui_quit_cb,   evbase);
   struct event *sigterm_ev  = evsignal_new(evbase, SIGTERM,  ui_quit_cb,   evbase);
   struct event *sigsegv_ev  = evsignal_new(evbase, SIGSEGV,  sigsegv_cb,   NULL);
-  struct event *sigwinch_ev = evsignal_new(evbase, SIGWINCH, ui_redraw_cb, NULL);
+  struct event *sigwinch_ev = evsignal_new(evbase, SIGWINCH, ui_winch_cb, NULL);
 
   evsignal_add(sigint_ev,   NULL);
   evsignal_add(sigterm_ev,  NULL);

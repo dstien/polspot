@@ -94,6 +94,7 @@ void ui_update_post(int delay);
 void ui_update_cb(evutil_socket_t sock, short event, void *arg);
 void ui_redraw_post();
 void ui_redraw_cb(evutil_socket_t sock, short event, void *arg);
+void ui_winch_cb(evutil_socket_t sock, short event, void *arg);
 void ui_quit_post();
 void ui_quit_cb(evutil_socket_t sock, short event, void *arg);
 

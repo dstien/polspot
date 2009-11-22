@@ -27,9 +27,6 @@ void trackprogress_draw(ui_t *ui)
 
     mvwprintw(ui->win, 0, 0, "%2d:%02d ", pos / 60000, pos % 60000 / 1000);
 
-    if (ui->width > 10)
-      mvwprintw(ui->win, 0, ui->width - 5, "%2d:%02d", len / 60000, len % 60000 / 1000);
-
     if (ui->width > 28) {
       int wdt = ui->width - 10;
       wchar_t bar[wdt];
@@ -46,6 +43,9 @@ void trackprogress_draw(ui_t *ui)
 
       mvwaddnwstr(ui->win, 0, 5, bar, len);
     }
+
+    if (ui->width > 10)
+      mvwprintw(ui->win, 0, ui->width - 5, "%2d:%02d", len / 60000, len % 60000 / 1000);
 
     if (!g_session.paused) {
       ui_dirty(UI_TRACKPROGRESS);

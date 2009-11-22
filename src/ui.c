@@ -392,6 +392,18 @@ void ui_redraw_cb(evutil_socket_t sock, short event, void *arg)
   ui_balance();
 }
 
+// Callback from SIGWINCH handler. Post a delayed redraw request to prevent
+// excessive redrawing during continuous window resizing.
+void ui_winch_cb(evutil_socket_t sock, short event, void *arg)
+{
+  (void)sock;
+  (void)event;
+  (void)arg;
+
+  struct timeval tv = { 0, 500000 };
+  evtimer_add(g_screen.redraw_ev, &tv);
+}
+
 // Queue application quit event.
 void ui_quit_post()
 {
