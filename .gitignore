@@ -1,2 +1,5 @@
 key.h
 Makefile.local.mk
+*.o
+**/polspot
+user_agent.h
