@@ -2,7 +2,7 @@
 #define POLSPOT_SESSION_H
 
 #include <event2/event.h>
-#include <spotify/api.h>
+#include <libspotify/api.h>
 
 typedef enum sess_state {
   SESS_OFFLINE,

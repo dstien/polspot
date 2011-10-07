@@ -151,7 +151,7 @@ void sess_init(struct event_base *evbase)
     .userdata             = &g_session
   };
 
-  sp_error err = sp_session_init(&config, &g_session.spotify);
+  sp_error err = sp_session_create(&config, &g_session.spotify);
 
   if (err != SP_ERROR_OK)
     panic("sp_session_init() failed: %s", sp_error_message(err));
@@ -196,10 +196,7 @@ void sess_connect()
   sess_disconnect();
 
   // Login with credentials set by sess_username/sess_password.
-  sp_error err = sp_session_login(g_session.spotify, g_session.username, g_session.password);
-
-  if (err != SP_ERROR_OK)
-    panic("sp_session_login() failed: %s", sp_error_message(err));
+  sp_session_login(g_session.spotify, g_session.username, g_session.password, 0);
 
   log_append("Connecting...");
 
@@ -214,10 +211,7 @@ void sess_disconnect()
   if (g_session.state == SESS_ONLINE) {
     sess_stop();
 
-     sp_error err = sp_session_logout(g_session.spotify);
-
-     if (err != SP_ERROR_OK)
-       panic("sp_session_logout() failed: %s", sp_error_message(err));
+    sp_session_logout(g_session.spotify);
 
     log_append("Disconnecting...");
     g_session.state = SESS_DISCONNECTING;
@@ -283,11 +277,6 @@ void sess_play(sp_track *t)
     return;
   }
 
-  if (!t || !sp_track_is_available(t) || !sp_track_is_loaded(t)) {
-    log_append("Track not available");
-    return;
-  }
-
   sess_stop();
 
   g_session.current_track = t;
@@ -298,9 +287,7 @@ void sess_play(sp_track *t)
   if (err != SP_ERROR_OK)
     panic("sp_session_player_load() failed: %s", sp_error_message(err));
 
-  err = sp_session_player_play(g_session.spotify, true);
-  if (err != SP_ERROR_OK)
-    panic("sp_session_player_play() failed: %s", sp_error_message(err));
+  sp_session_player_play(g_session.spotify, true);
 
   g_session.playing = true;
 
@@ -347,9 +334,7 @@ void sess_pause()
     return;
 
   g_session.paused = !g_session.paused;
-  sp_error err = sp_session_player_play(g_session.spotify, !g_session.paused);
-  if (err != SP_ERROR_OK)
-    panic("sp_session_player_play() failed: %s", sp_error_message(err));
+  sp_session_player_play(g_session.spotify, !g_session.paused);
 
 
   if (g_session.paused) {
