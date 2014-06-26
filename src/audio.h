@@ -2,7 +2,7 @@
 #define POLSPOT_AUDIO_H
 
 #include <pthread.h>
-#include <spotify/api.h>
+#include <libspotify/api.h>
 
 typedef struct audio {
   pthread_t       thread;

@@ -65,7 +65,7 @@ void tracklist_draw(ui_t *ui)
       if (i + line == g_pos)
         mvwchgat(ui->win, line + 1, 0, -1,
             (ui->flags & UI_FLAG_FOCUS ? A_REVERSE : A_BOLD),
-            (sp_track_is_available(t) ? UI_STYLE_NORMAL : UI_STYLE_NA), NULL);
+            (true ? UI_STYLE_NORMAL : UI_STYLE_NA), NULL);
 
       ++line;
     }
